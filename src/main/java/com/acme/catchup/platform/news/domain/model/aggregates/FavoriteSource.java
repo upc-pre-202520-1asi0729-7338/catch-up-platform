@@ -1,10 +1,7 @@
 package com.acme.catchup.platform.news.domain.model.aggregates;
 
 import com.acme.catchup.platform.news.domain.model.commands.CreateFavoriteSourceCommand;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.Getter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -18,6 +15,7 @@ import java.util.Date;
 public class FavoriteSource extends AbstractAggregateRoot<FavoriteSource> {
     @Getter
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
