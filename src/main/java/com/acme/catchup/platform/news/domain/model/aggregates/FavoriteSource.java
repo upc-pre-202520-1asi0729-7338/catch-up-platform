@@ -16,6 +16,7 @@ import java.util.Date;
 @Entity
 @EntityListeners(AuditingEntityListener.class)
 public class FavoriteSource extends AbstractAggregateRoot<FavoriteSource> {
+    @Getter
     @Id
     private Long id;
 
