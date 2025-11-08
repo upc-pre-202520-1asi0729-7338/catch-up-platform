@@ -16,6 +16,10 @@ import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
@@ -32,10 +37,12 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 public class FavoriteSourcesController {
     private final FavoriteSourceCommandService favoriteSourceCommandService;
     private final FavoriteSourceQueryService favoriteSourceQueryService;
+    private final MessageSource messageSource;
 
-    public FavoriteSourcesController(FavoriteSourceCommandService favoriteSourceCommandService, FavoriteSourceQueryService favoriteSourceQueryService) {
+    public FavoriteSourcesController(FavoriteSourceCommandService favoriteSourceCommandService, FavoriteSourceQueryService favoriteSourceQueryService, MessageSource messageSource) {
         this.favoriteSourceCommandService = favoriteSourceCommandService;
         this.favoriteSourceQueryService = favoriteSourceQueryService;
+        this.messageSource = messageSource;
     }
 
 
@@ -63,8 +70,12 @@ public class FavoriteSourcesController {
             @ApiResponse(responseCode = "400", description = "Invalid input data")
     })
     @PostMapping
-    public ResponseEntity<FavoriteSourceResource> createFavoriteSource(@RequestBody CreateFavoriteSourceResource resource) {
+    public ResponseEntity<?> createFavoriteSource(@Valid @RequestBody CreateFavoriteSourceResource resource) {
         Optional<FavoriteSource> favoriteSource = favoriteSourceCommandService.handle(CreateFavoriteSourceCommandFromResourceAssembler.toCommandFromResource(resource));
+        if (favoriteSource.isEmpty())
+            return ResponseEntity.status(CONFLICT).body(
+                    ProblemDetail.forStatusAndDetail(CONFLICT,
+                            messageSource.getMessage("favorite.source.error.duplicated", null, LocaleContextHolder.getLocale())));
         return favoriteSource
                 .map(source -> new ResponseEntity<>(FavoriteSourceResourceFromEntityAssembler.toResourceFromEntity(source), CREATED))
                 .orElseGet(() -> ResponseEntity.badRequest().build());
