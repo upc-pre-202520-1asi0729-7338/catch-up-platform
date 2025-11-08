@@ -4,6 +4,10 @@ import com.acme.catchup.platform.news.domain.model.aggregates.FavoriteSource;
 import com.acme.catchup.platform.news.domain.model.commands.CreateFavoriteSourceCommand;
 import com.acme.catchup.platform.news.domain.services.FavoriteSourceCommandService;
 import com.acme.catchup.platform.news.infrastructure.persistence.jpa.repositories.FavoriteSourceRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -11,15 +15,21 @@ import java.util.Optional;
 @Service
 public class FavoriteSourceCommandServiceImpl implements FavoriteSourceCommandService {
     private final FavoriteSourceRepository favoriteSourceRepository;
+    private static final Logger LOGGER = LoggerFactory.getLogger(FavoriteSourceCommandServiceImpl.class);
+    private final MessageSource messageSource;
 
-    public FavoriteSourceCommandServiceImpl(FavoriteSourceRepository favoriteSourceRepository) {
+    public FavoriteSourceCommandServiceImpl(FavoriteSourceRepository favoriteSourceRepository, MessageSource messageSource) {
         this.favoriteSourceRepository = favoriteSourceRepository;
+        this.messageSource = messageSource;
     }
 
     @Override
     public Optional<FavoriteSource> handle(CreateFavoriteSourceCommand command) {
-        if (favoriteSourceRepository.existsByNewsApiKeyAndSourceId(command.newsApiKey(), command.sourceId()))
-            throw new IllegalArgumentException("Favorite source with the given News API key and source ID already exists.");
+        if (favoriteSourceRepository.existsByNewsApiKeyAndSourceId(command.newsApiKey(), command.sourceId())) {
+            LOGGER.error(messageSource.getMessage("favorite.source.error.duplicated", null, LocaleContextHolder.getLocale()));
+            return Optional.empty();
+        }
+
         var favoriteSource = new FavoriteSource(command);
         var createdFavoriteSource = favoriteSourceRepository.save(favoriteSource);
         return Optional.of(createdFavoriteSource);
